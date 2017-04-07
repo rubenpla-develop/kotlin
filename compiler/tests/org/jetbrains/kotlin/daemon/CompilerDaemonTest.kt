@@ -149,7 +149,10 @@ class CompilerDaemonTest : KotlinIntegrationTestBase() {
 
     fun testDaemonInstancesSimple() {
         withFlagFile(getTestName(true), ".alive") { flagFile ->
-            val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 1, runFilesPath = File(tmpdir, getTestName(true)).absolutePath)
+            val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 5,
+                                              runFilesPath = File(tmpdir, getTestName(true)).absolutePath,
+                                              reportPerf = true,
+                                              verbose = true)
             val compilerId2 = CompilerId.makeCompilerId(compilerClassPath +
                                                         File(KotlinIntegrationTestBase.getCompilerLib(), "kotlin-compiler-sources.jar"))
 
@@ -304,10 +307,14 @@ class CompilerDaemonTest : KotlinIntegrationTestBase() {
     fun testDaemonExecutionViaIntermediateProcess() {
         val clientAliveFile = createTempFile("kotlin-daemon-transitive-run-test", ".run")
         val runFilesPath = File(tmpdir, getTestName(true)).absolutePath
-        val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 1, runFilesPath = runFilesPath)
+        val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 1,
+                                          runFilesPath = runFilesPath,
+                                          reportPerf = true,
+                                          verbose = true)
         val jar = tmpdir.absolutePath + File.separator + "hello.jar"
         val args = listOf(
                 File(File(System.getProperty("java.home"), "bin"), "java").absolutePath,
+                "-Xmx256m",
                 "-D$COMPILE_DAEMON_VERBOSE_REPORT_PROPERTY",
                 "-cp",
                 daemonClientClassPath.joinToString(File.pathSeparator) { it.absolutePath },
@@ -358,7 +365,10 @@ class CompilerDaemonTest : KotlinIntegrationTestBase() {
         assertTrue(PARALLEL_THREADS_TO_COMPILE <= LoopbackNetworkInterface.SERVER_SOCKET_BACKLOG_SIZE)
 
         withFlagFile(getTestName(true), ".alive") { flagFile ->
-            val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 1, runFilesPath = File(tmpdir, getTestName(true)).absolutePath)
+            val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 5,
+                                              runFilesPath = File(tmpdir, getTestName(true)).absolutePath,
+                                              reportPerf = true,
+                                              verbose = true)
             val daemonJVMOptions = configureDaemonJVMOptions(inheritMemoryLimits = true, inheritAdditionalProperties = false)
             val daemon = KotlinCompilerClient.connectToCompileService(compilerId, flagFile, daemonJVMOptions, daemonOptions, DaemonReportingTargets(out = System.err), autostart = true)
             assertNotNull("failed to connect daemon", daemon)
@@ -414,8 +424,9 @@ class CompilerDaemonTest : KotlinIntegrationTestBase() {
             try {
                 withFlagFile(getTestName(true), ".alive") { flagFile ->
                     withFlagFile(getTestName(true), ".salive") { sessionFlagFile ->
-                        val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 10000, // attempt to avoid immediate shutdown of the non-elected daemons
+                        val daemonOptions = DaemonOptions(shutdownDelayMilliseconds = 100,
                                                           runFilesPath = File(tmpdir, getTestName(true)).absolutePath,
+                                                          reportPerf = true,
                                                           verbose = true)
                         val logFile = createTempFile("kotlin-daemon-test", ".log")
                         logFiles[threadNo] = logFile
