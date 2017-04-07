@@ -310,6 +310,7 @@ object KotlinCompilerClient {
 
     // --- Implementation ---------------------------------------
 
+    @Synchronized
     private inline fun <R> connectLoop(reportingTargets: DaemonReportingTargets, body: () -> R?): R? {
         try {
             var attempts = 0
