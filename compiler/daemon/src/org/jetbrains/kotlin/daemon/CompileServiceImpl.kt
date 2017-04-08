@@ -329,6 +329,7 @@ class CompileServiceImpl(
         val daemonReporter = DaemonMessageReporter(servicesFacade, compilationOptions)
         val compilerMode = compilationOptions.compilerMode
         val targetPlatform = compilationOptions.targetPlatform
+        log.info("Starting compilation with args: " + compilerArguments.joinToString(" "))
         val k2PlatformArgs = try {
             when (targetPlatform) {
                 CompileService.TargetPlatform.JVM -> K2JVMCompilerArguments().apply { K2JVMCompiler().parseArguments(compilerArguments, this) }
@@ -867,9 +868,18 @@ class CompileServiceImpl(
                 ifAliveChecksImpl(minAliveness, ignoreCompilerChanged, body)
             }
 
-    inline private fun<R> ifAliveChecksImpl(minAliveness: Aliveness = Aliveness.Alive, ignoreCompilerChanged: Boolean = false, body: () -> CompileService.CallResult<R>): CompileService.CallResult<R> =
-        when {
-            state.alive.get() < minAliveness.ordinal -> CompileService.CallResult.Dying()
+    inline private fun<R> ifAliveChecksImpl(minAliveness: Aliveness = Aliveness.Alive, ignoreCompilerChanged: Boolean = false, body: () -> CompileService.CallResult<R>): CompileService.CallResult<R> {
+        val curState = state.alive.get()
+        return when {
+            curState < minAliveness.ordinal -> {
+                log.info("Cannot perform operation, requested state: ${minAliveness.name} > actual: ${try {
+                    Aliveness.values()[curState].name
+                }
+                catch (_: Throwable) {
+                    "invalid($curState)"
+                }}")
+                CompileService.CallResult.Dying()
+            }
             !ignoreCompilerChanged && classpathWatcher.isChanged -> {
                 log.info("Compiler changed, scheduling shutdown")
                 shutdownWithDelay()
@@ -885,6 +895,7 @@ class CompileServiceImpl(
                 }
             }
         }
+    }
 
     private inline fun<R> withValidClientOrSessionProxy(sessionId: Int,
                                                         body: (ClientOrSessionProxy<Any>?) -> CompileService.CallResult<R>
