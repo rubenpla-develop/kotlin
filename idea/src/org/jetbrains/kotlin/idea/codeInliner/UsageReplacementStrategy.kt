@@ -122,7 +122,7 @@ fun UsageReplacementStrategy.replaceUsages(
             val targetDeclaration = targetPsiElement as? KtNamedDeclaration
 
             val usagesChildrenFirst = usages.sortChildrenFirst()
-            for (usage in usagesChildrenFirst) {
+            usages@ for (usage in usagesChildrenFirst) {
                 try {
                     if (!usage.isValid) {
                         invalidUsagesFound = true
@@ -130,11 +130,20 @@ fun UsageReplacementStrategy.replaceUsages(
                     }
 
                     val usageParent = usage.parent
-                    if (usageParent is KtCallableReferenceExpression) {
-                        val grandParent = usageParent.parent
-                        ConvertReferenceToLambdaIntention().applyTo(usageParent, null)
-                        (grandParent as? KtElement)?.let { doRefactoringInside(it, targetDeclaration?.name, targetDeclaration?.descriptor) }
-                        continue
+                    when (usageParent) {
+                        is KtCallableReferenceExpression -> {
+                            val grandParent = usageParent.parent
+                            ConvertReferenceToLambdaIntention().applyTo(usageParent, null)
+                            (grandParent as? KtElement)?.let {
+                                doRefactoringInside(it, targetDeclaration?.name, targetDeclaration?.descriptor)
+                            }
+                            continue@usages
+                        }
+                        is KtCallElement -> {
+                            val lambdaArguments = usageParent.lambdaArguments
+
+                        }
+
                     }
 
                     //TODO: keep the import if we don't know how to replace some of the usages
