@@ -79,7 +79,7 @@ public final class TranslationUtils {
     }
 
     @NotNull
-    public static String getAccessorFunctionName(@NotNull FunctionDescriptor descriptor) {
+    private static String getAccessorFunctionName(@NotNull FunctionDescriptor descriptor) {
         boolean isGetter = descriptor instanceof PropertyGetterDescriptor || descriptor instanceof LocalVariableAccessorDescriptor.Getter;
         return isGetter ? "get" : "set";
     }
@@ -223,12 +223,6 @@ public final class TranslationUtils {
         KtExpression left = expression.getLeft();
         assert left != null : "Binary expression should have a left expression: " + expression.getText();
         return Translation.translateAsExpression(left, context, block);
-    }
-
-    @NotNull
-    public static JsExpression translateRightExpression(@NotNull TranslationContext context,
-            @NotNull KtBinaryExpression expression) {
-        return translateRightExpression(context, expression, context.dynamicContext().jsBlock());
     }
 
     @NotNull
@@ -384,13 +378,6 @@ public final class TranslationUtils {
     public static FunctionDescriptor getCoroutineDoResumeFunction(@NotNull TranslationContext context) {
         return getCoroutineBaseClass(context).getUnsubstitutedMemberScope()
                 .getContributedFunctions(Name.identifier("doResume"), NoLookupLocation.FROM_DESERIALIZATION)
-                .iterator().next();
-    }
-
-    @NotNull
-    public static FunctionDescriptor getCoroutineResumeFunction(@NotNull TranslationContext context) {
-        return getCoroutineBaseClass(context).getUnsubstitutedMemberScope()
-                .getContributedFunctions(Name.identifier("resume"), NoLookupLocation.FROM_DESERIALIZATION)
                 .iterator().next();
     }
 
