@@ -169,7 +169,6 @@ class KotlinInlineValHandler : InlineActionHandler() {
         }
 
         val typeArgumentsForCall = getQualifiedTypeArgumentList(initializer)
-        val parametersForFunctionLiteral = getParametersForFunctionLiteral(initializer)
 
         val referencesInOriginalFile = referenceExpressions.filter { it.containingFile == file }
         val isHighlighting = referencesInOriginalFile.isNotEmpty()
@@ -278,71 +277,4 @@ class KotlinInlineValHandler : InlineActionHandler() {
         CommonRefactoringUtil.showErrorHint(project, editor, message, RefactoringBundle.message("inline.variable.title"), HelpID.INLINE_VARIABLE)
     }
 
-    private fun getParametersForFunctionLiteral(initializer: KtExpression): String? {
-        val functionLiteralExpression = initializer.unpackFunctionLiteral(true) ?: return null
-        val context = initializer.analyze(BodyResolveMode.PARTIAL)
-        val lambdaDescriptor = context.get(BindingContext.FUNCTION, functionLiteralExpression.functionLiteral)
-        if (lambdaDescriptor == null || ErrorUtils.containsErrorType(lambdaDescriptor)) return null
-        return lambdaDescriptor.valueParameters.joinToString {
-            it.name.asString() + ": " + IdeDescriptorRenderers.SOURCE_CODE.renderType(it.type)
-        }
-    }
-
-    private fun addFunctionLiteralParameterTypes(parameters: String, inlinedExpressions: List<KtExpression>) {
-        val containingFile = inlinedExpressions.first().containingKtFile
-        val resolutionFacade = containingFile.getResolutionFacade()
-
-        val functionsToAddParameters = inlinedExpressions.mapNotNull {
-            val lambdaExpr = it.unpackFunctionLiteral(true).sure { "can't find function literal expression for " + it.text }
-            if (needToAddParameterTypes(lambdaExpr, resolutionFacade)) lambdaExpr else null
-        }
-
-        val psiFactory = KtPsiFactory(containingFile)
-        for (lambdaExpr in functionsToAddParameters) {
-            val lambda = lambdaExpr.functionLiteral
-
-            val currentParameterList = lambda.valueParameterList
-            val newParameterList = psiFactory.createParameterList("($parameters)")
-            if (currentParameterList != null) {
-                currentParameterList.replace(newParameterList)
-            }
-            else {
-                // TODO: Ugly code, need refactoring
-                val openBraceElement = lambda.lBrace
-
-                val nextSibling = openBraceElement.nextSibling
-                val whitespaceToAdd = if (nextSibling is PsiWhiteSpace && nextSibling.text.contains("\n"))
-                    nextSibling.copy()
-                else
-                    null
-
-                val whitespaceAndArrow = psiFactory.createWhitespaceAndArrow()
-                lambda.addRangeAfter(whitespaceAndArrow.first, whitespaceAndArrow.second, openBraceElement)
-
-                lambda.addAfter(newParameterList, openBraceElement)
-                if (whitespaceToAdd != null) {
-                    lambda.addAfter(whitespaceToAdd, openBraceElement)
-                }
-            }
-            ShortenReferences.DEFAULT.process(lambdaExpr.valueParameters)
-        }
-    }
-
-    private fun needToAddParameterTypes(
-            lambdaExpression: KtLambdaExpression,
-            resolutionFacade: ResolutionFacade
-    ): Boolean {
-        val functionLiteral = lambdaExpression.functionLiteral
-        val context = resolutionFacade.analyze(lambdaExpression, BodyResolveMode.PARTIAL_WITH_DIAGNOSTICS)
-        return context.diagnostics.any { diagnostic ->
-            val factory = diagnostic.factory
-            val element = diagnostic.psiElement
-            val hasCantInferParameter = factory == Errors.CANNOT_INFER_PARAMETER_TYPE &&
-                                        element.parent.parent == functionLiteral
-            val hasUnresolvedItOrThis = factory == Errors.UNRESOLVED_REFERENCE &&
-                                        element.text == "it" &&
-                                        element.getStrictParentOfType<KtFunctionLiteral>() == functionLiteral
-            hasCantInferParameter || hasUnresolvedItOrThis
-        }
-    }
 }
