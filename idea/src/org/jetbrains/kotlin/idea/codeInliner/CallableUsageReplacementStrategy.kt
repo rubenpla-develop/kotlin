@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.idea.intentions.OperatorToFunctionIntention
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 
 class CallableUsageReplacementStrategy(
@@ -33,7 +34,15 @@ class CallableUsageReplacementStrategy(
         if (!resolvedCall.status.isSuccess) return null
 
         val callElement = resolvedCall.call.callElement
-        if (callElement !is KtExpression && callElement !is KtAnnotationEntry) return null
+
+        val callElementToReplace = when (resolvedCall) {
+            is VariableAsFunctionResolvedCall -> (callElement as? KtCallExpression)?.calleeExpression ?: callElement
+            else -> callElement
+
+        }
+
+        if (callElementToReplace !is KtExpression && callElementToReplace !is KtAnnotationEntry)
+            return null
 
         //TODO: precheck pattern correctness for annotation entry
 
@@ -43,7 +52,7 @@ class CallableUsageReplacementStrategy(
                 createReplacer(nameExpression)?.invoke()
             }
             else {
-                CodeInliner(usage, bindingContext, resolvedCall, callElement, replacement).doInline()
+                CodeInliner(usage, bindingContext, resolvedCall, callElementToReplace, replacement).doInline()
             }
         }
     }
