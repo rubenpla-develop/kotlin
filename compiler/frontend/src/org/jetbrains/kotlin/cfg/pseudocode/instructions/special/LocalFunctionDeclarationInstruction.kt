@@ -36,16 +36,6 @@ class LocalFunctionDeclarationInstruction(
             field = outgoingEdgeTo(value) as SubroutineSinkInstruction?
         }
 
-    override val nextInstructions: Collection<Instruction>
-        get() {
-            if (sink != null) {
-                val instructions = Lists.newArrayList<Instruction>(sink)
-                instructions.addAll(super.nextInstructions)
-                return instructions
-            }
-            return super.nextInstructions
-        }
-
     override fun accept(visitor: InstructionVisitor) {
         visitor.visitLocalFunctionDeclarationInstruction(this)
     }

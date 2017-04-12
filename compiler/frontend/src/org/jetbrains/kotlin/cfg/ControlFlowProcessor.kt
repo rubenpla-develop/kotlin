@@ -105,7 +105,6 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
     private fun processLocalDeclaration(subroutine: KtDeclaration) {
         val afterDeclaration = builder.createUnboundLabel("after local declaration")
 
-        builder.nondeterministicJump(afterDeclaration, subroutine, null)
         generate(subroutine)
         builder.bindLabel(afterDeclaration)
     }

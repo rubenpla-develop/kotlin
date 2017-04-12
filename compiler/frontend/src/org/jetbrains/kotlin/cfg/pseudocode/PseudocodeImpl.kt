@@ -285,7 +285,7 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
                 val body = instruction.body as PseudocodeImpl
                 body.parent = this@PseudocodeImpl
                 body.postProcess()
-                instruction.next = sinkInstruction
+                instruction.next = getNextPosition(currentPosition)
             }
 
             override fun visitSubroutineExit(instruction: SubroutineExitInstruction) {
