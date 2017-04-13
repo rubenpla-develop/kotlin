@@ -1,0 +1,3 @@
+Implicit 'invoke' 10 o()
+Implicit 'invoke' 2 c()
+Implicit 'invoke' 6 o()
