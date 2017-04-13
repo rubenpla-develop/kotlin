@@ -166,7 +166,6 @@ fun JsFunction.fillCoroutineMetadata(
             finallyPathName = getCoroutinePropertyName("finallyPath"),
             resultName = getCoroutinePropertyName("result"),
             exceptionName = getCoroutinePropertyName("exception"),
-            facadeName = getCoroutinePropertyName("facade"),
             hasController = hasController,
             isLambda = isLambda,
             hasReceiver = descriptor.dispatchReceiverParameter != null

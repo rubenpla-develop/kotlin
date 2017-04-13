@@ -107,7 +107,6 @@ class CoroutineMetadata(
         val finallyPathName: JsName,
         val resultName: JsName,
         val exceptionName: JsName,
-        val facadeName: JsName,
         val baseClassRef: JsExpression,
         val suspendObjectRef: JsExpression,
         val isLambda: Boolean,
