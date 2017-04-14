@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptor
 import org.jetbrains.kotlin.idea.codeInliner.CallableUsageReplacementStrategy
 import org.jetbrains.kotlin.idea.codeInliner.CodeToInlineBuilder
 import org.jetbrains.kotlin.idea.core.copied
+import org.jetbrains.kotlin.idea.decompiler.KtDecompiledFile
 import org.jetbrains.kotlin.idea.refactoring.checkConflictsInteractively
 import org.jetbrains.kotlin.idea.references.KtSimpleNameReference
 import org.jetbrains.kotlin.idea.util.getResolutionScope
@@ -65,6 +66,9 @@ class KotlinInlineValHandler : InlineActionHandler() {
         val declaration = element as KtProperty
         val file = declaration.containingKtFile
         val name = declaration.name ?: return
+        if (file is KtDecompiledFile) {
+            return showErrorHint(project, editor, "Cannot inline '$name' from a decompiled file")
+        }
 
         val assignments = hashSetOf<PsiElement>()
         val referenceExpressions = arrayListOf<KtExpression>()
