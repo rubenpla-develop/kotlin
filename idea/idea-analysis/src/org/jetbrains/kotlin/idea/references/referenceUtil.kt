@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.idea.references
 
+import com.intellij.lang.java.JavaLanguage
 import com.intellij.psi.*
 import org.jetbrains.kotlin.asJava.unwrapped
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -75,7 +76,11 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
     // Optimizations
     when (this) {
         is KtInvokeFunctionReference -> {
-            if (candidateTarget !is KtNamedFunction && candidateTarget !is PsiMethod) return false
+            if (candidateTarget !is KtNamedFunction &&
+                candidateTarget !is PsiMember &&
+                (candidateTarget !is PsiMethod && candidateTarget.language == JavaLanguage.INSTANCE)) {
+                return false
+            }
         }
         is KtDestructuringDeclarationReference -> {
             if (candidateTarget !is KtNamedFunction && candidateTarget !is KtParameter && candidateTarget !is PsiMethod) return false
