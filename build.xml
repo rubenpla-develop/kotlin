@@ -247,6 +247,7 @@
             <fileset dir="compiler/resolution/src"/>
             <fileset dir="compiler/frontend.java/src"/>
             <fileset dir="compiler/light-classes/src"/>
+            <fileset dir="compiler/frontend.script/src"/>
             <fileset dir="compiler/plugin-api/src"/>
             <fileset dir="plugins/annotation-collector/src"/>
             <fileset dir="compiler/serialization/src"/>
