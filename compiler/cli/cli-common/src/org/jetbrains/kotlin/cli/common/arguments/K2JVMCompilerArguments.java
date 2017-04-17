@@ -108,6 +108,12 @@ public class K2JVMCompilerArguments extends CommonCompilerArguments {
     public boolean skipRuntimeVersionCheck;
 
     @Argument(
+            value = "-Xuse-fast-class-files-reading",
+            description = "Use faster class files reading implementation (may speed up build time, but it's experimental)"
+    )
+    public boolean useFastClassFilesReading;
+
+    @Argument(
             value = "-Xdump-declarations-to",
             valueDescription = "<path>",
             description = "Path to JSON file to dump Java to Kotlin declaration mappings"
