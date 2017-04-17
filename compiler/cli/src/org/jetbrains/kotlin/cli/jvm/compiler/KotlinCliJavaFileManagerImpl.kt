@@ -23,8 +23,15 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 import com.intellij.psi.impl.file.PsiPackageImpl
 import com.intellij.psi.search.GlobalSearchScope
+import gnu.trove.THashMap
 import org.jetbrains.kotlin.cli.jvm.index.JavaRoot
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesIndex
+import org.jetbrains.kotlin.load.java.structure.JavaClass
+import org.jetbrains.kotlin.load.java.structure.impl.JavaClassImpl
+import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaClass
+import org.jetbrains.kotlin.load.java.structure.impl.classFiles.ClassifierResolutionContext
+import org.jetbrains.kotlin.load.java.structure.impl.classFiles.SignatureParsingComponent
+import org.jetbrains.kotlin.load.java.structure.impl.classFiles.isInnerClass
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.jvm.KotlinCliJavaFileManager
@@ -39,6 +46,7 @@ class KotlinCliJavaFileManagerImpl(private val myPsiManager: PsiManager) : CoreJ
     private val perfCounter = PerformanceCounter.create("Find Java class")
     private var index: JvmDependenciesIndex by Delegates.notNull()
     private val topLevelClassesCache: MutableMap<FqName, VirtualFile?> = THashMap()
+    private val allScope = GlobalSearchScope.allScope(myPsiManager.project)
 
     fun initIndex(packagesCache: JvmDependenciesIndex) {
         this.index = packagesCache
@@ -55,6 +63,39 @@ class KotlinCliJavaFileManagerImpl(private val myPsiManager: PsiManager) : CoreJ
                 findVirtualFileGivenPackage(dir, relativeClassName, type)
             }
         }?.takeIf { it in searchScope }
+    }
+
+    private val binaryCache: MutableMap<ClassId, JavaClass?> = THashMap()
+    private val signatureParsingComponent =
+            SignatureParsingComponent(ClassifierResolutionContext { findJavaClass(it, allScope) })
+
+    override fun findJavaClass(classId: ClassId, searchScope: GlobalSearchScope): JavaClass? {
+        val virtualFile = findVirtualFileForTopLevelClass(classId, searchScope) ?: return null
+
+        if (virtualFile.extension == "class") {
+            // We return all class files' names in the directory in knownClassNamesInPackage method, so one may request an inner class
+            return binaryCache.getOrPut(classId) {
+                val classContent = virtualFile.contentsToByteArray()
+                if (virtualFile.nameWithoutExtension.contains("$") && isInnerClass(classContent)) return@getOrPut null
+                if (classId.outerClassId != null) {
+                    val outerClass = findJavaClass(classId.outerClassId!!, searchScope)
+                    return@getOrPut outerClass?.findInnerClass(classId.shortClassName)
+                }
+
+                val resolver = ClassifierResolutionContext { classId -> findJavaClass(classId, searchScope) }
+
+                BinaryJavaClass(
+                        virtualFile,
+                        classId.asSingleFqName(),
+                        resolver,
+                        signatureParsingComponent,
+                        outerClass = null,
+                        classContent = classContent
+                )
+            }
+        }
+
+        return virtualFile.findPsiClassInVirtualFile(classId.relativeClassName.asString())?.let(::JavaClassImpl)
     }
 
     // this method is called from IDEA to resolve dependencies in Java code
