@@ -326,6 +326,10 @@ fun main(args: Array<String>) {
             model("loadJava/compiledJava", extension = "java", excludeDirs = listOf("sam", "kotlinSignature/propagation"))
         }
 
+        testClass<AbstractLoadJavaWithFastClassReadingTest> {
+            model("loadJava/compiledJava", extension = "java", excludeDirs = listOf("sam", "kotlinSignature/propagation"), testMethod = "doTestCompiledJava")
+        }
+
         testClass<AbstractCompileJavaAgainstKotlinTest> {
             model("compileJavaAgainstKotlin")
         }
