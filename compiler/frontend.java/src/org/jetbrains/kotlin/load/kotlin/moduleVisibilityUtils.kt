@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaPackageFragment
 import org.jetbrains.kotlin.modules.Module
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedCallableMemberDescriptor
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeAliasDescriptor
 import java.io.File
 
@@ -52,7 +53,7 @@ fun isContainedByCompiledPartOfOurModule(descriptor: DeclarationDescriptor, outD
         is KotlinJvmBinarySourceElement ->
             source.binaryClass
         is KotlinJvmBinaryPackageSourceElement ->
-            if (descriptor is DeserializedCallableMemberDescriptor) {
+            if (descriptor is DeserializedMemberDescriptor) {
                 source.getContainingBinaryClass(descriptor) ?: source.getRepresentativeBinaryClass()
             }
             else {
