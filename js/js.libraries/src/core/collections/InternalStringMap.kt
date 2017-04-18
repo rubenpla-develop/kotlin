@@ -21,11 +21,14 @@ package kotlin.collections
 
 import kotlin.collections.MutableMap.MutableEntry
 
-private typealias K = String
 /**
  * A simple wrapper around JavaScript Map for key type is string.
+ *
+ * Though this map is instantiated only with K=String, the K type is not fixed to String statically,
+ * because we want to have it erased to Any? in order not to generate type-safe override bridges for
+ * [get], [contains], [remove] etc, if they ever are generated.
  */
-internal class InternalStringMap<V>(override val equality: EqualityComparator) : InternalMap<K, V> {
+internal class InternalStringMap<K, V>(override val equality: EqualityComparator) : InternalMap<K, V> {
 
     private var backingMap: dynamic = js("Object.create(null)")
     override var size: Int = 0
@@ -100,11 +103,13 @@ internal class InternalStringMap<V>(override val equality: EqualityComparator) :
             override fun next(): MutableEntry<K, V> {
                 val key = iterator.next()
                 lastKey = key
-                return newMapEntry(key)
+                @Suppress("UNCHECKED_CAST")
+                return newMapEntry(key as K)
             }
 
             override fun remove() {
-                this@InternalStringMap.remove(checkNotNull(lastKey))
+                @Suppress("UNCHECKED_CAST")
+                this@InternalStringMap.remove(checkNotNull(lastKey) as K)
             }
         }
     }
